@@ -4,13 +4,16 @@
   "description": "Chat Platform",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js"
   },
   "author": "ilhanmuftic",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.20.2",
+    "cookie-parser": "^1.4.6",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
+    "mysql": "^2.18.1",
     "socket.io": "^4.6.1",
     "uuid4": "^2.0.3"
   }
