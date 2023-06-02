@@ -3,11 +3,11 @@ const bodyParser = require('body-parser');
 const mysql = require('mysql');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
-const JWT_SECRET = 'your_secret_key_here';
+const JWT_SECRET = 'cata';
 const path = require('path')
 const cookieParser = require('cookie-parser')
 const app = express();
-const port = process.env.PORT || 80;
+const port = process.env.PORT || 8080;
 const io = require('socket.io')(3000)
 
 app.use(express.static(path.join("public", "static")))
@@ -36,36 +36,30 @@ const db = mysql.createConnection({
     try {
         // Verify the JWT and extract the user ID
         const token = req.cookies.jwt;
-        const { playerId } = jwt.verify(token, JWT_SECRET);
+        const { userId } = jwt.verify(token, JWT_SECRET);
     
         // Attach the user object to the request
-        const playerQuery = `SELECT p.*, j.title AS job_title, e.name AS education_name, pt.time as experience
-        FROM players p
-        LEFT JOIN jobs j ON p.job_id = j.id
-        LEFT JOIN education e ON p.education_id = e.id
-        LEFT JOIN player_time pt ON pt.player_id = p.id
-        WHERE p.id = '${playerId}'
-        `;
+        const userQuery = `SELECT * FROM users WHERE id='${userId}'`
     
-        const playerRows = await new Promise((resolve, reject) => {
-          db.query(playerQuery,  (err, results) => {
+        const userRows = await new Promise((resolve, reject) => {
+            db.query(userQuery,  (err, results) => {
             if (err) reject(err);
             else resolve(results);
           });
         });
     
     
-        const player = playerRows[0];
-        console.log(player)
+        const user = userRows[0];
+        console.log(user)
     
-      if (!player) return res.status(401).send({error:'Unauthorized'});
+        if (!user) return res.status(401).send({error:'Unauthorized'});
     
-      req.player = player;
+        req.user = user;
     
       next();
       } catch (err) {
         console.log(err)
-        res.status(401).send({error:'Unauthorized'});
+        //res.status(401).send({error:'Unauthorized'});
         res.redirect('/login')
       }
     }
@@ -84,15 +78,15 @@ app.post('/login', (req, res) => {
     if (!username || !password) {
       return res.status(400).send('Please provide username and password');
     }
-    db.query('SELECT * FROM players WHERE username = ? AND password = ?', [username, password], (error, results) => {
+    db.query('SELECT * FROM users WHERE username = ? AND password = ?', [username, password], (error, results) => {
       if (error) {
         throw error;
       }
       if (results.length === 0) {
         return res.status(401).send({error:'Invalid username or password'});
       }
-      const player = results[0];
-      const token = jwt.sign({ playerId: player.id }, JWT_SECRET, { expiresIn: '1y' });
+      const user = results[0];
+        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1y' });
       res.cookie('jwt', token, { httpOnly: true });
       res.status(200).send({msg:'Logged in successfully'});
     });
@@ -102,7 +96,7 @@ app.post('/signup', async (req, res) => {
     try {
       // Check if the username already exists
       const usernameExists = await new Promise((resolve, reject) => {
-        const query = `SELECT id FROM players WHERE username = ?`;
+        const query = `SELECT id FROM users WHERE username = ?`;
         db.query(query, [req.body.username], (error, results) => {
           if (error) {
             reject(error);
@@ -117,7 +111,7 @@ app.post('/signup', async (req, res) => {
   
       // Insert the user to the database
       await new Promise((resolve, reject) => {
-        const query = `INSERT INTO players (id, username, password) VALUES (uuid(), ?, ?)`;
+        const query = `INSERT INTO users (id, username, password) VALUES (uuid(), ?, ?)`;
         db.query(query, [req.body.username, req.body.password], (error, results) => {
           if (error) {
             reject(error);
@@ -127,7 +121,7 @@ app.post('/signup', async (req, res) => {
         });
       });
 
-      setUpNewPlayer(req.body.username);
+      //setUpNewPlayer(req.body.username);
   
       // Respond with success message
       res.status(200).send({msg:'User created'});
