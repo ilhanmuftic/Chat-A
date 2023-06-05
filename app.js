@@ -8,7 +8,16 @@ const path = require('path')
 const cookieParser = require('cookie-parser')
 const app = express();
 const port = process.env.PORT || 8080;
-const io = require('socket.io')(3000)
+const cors = require('cors');
+
+const io = require('socket.io')(3000, {
+  cors: {
+    origin: 'http://localhost:8080',
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
 
 app.use(express.static(path.join("public", "static")))
 app.set('trust proxy', 1)
@@ -55,6 +64,25 @@ const db = mysql.createConnection({
         if (!user) return res.status(401).send({error:'Unauthorized'});
     
         req.user = user;
+
+        const roomId = req.query.room;
+
+        if(roomId){
+          const roomRows = await new Promise((resolve, reject) => {
+            db.query(`SELECT * FROM member WHERE user='${userId}' AND room='roomId'`,  (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        });
+    
+    
+        const room = roomRows[0];
+        console.log(room)
+    
+        if (!room) return res.status(401).send({error:'Unauthorized'});
+        }
+
+        
     
       next();
       } catch (err) {
@@ -67,6 +95,10 @@ const db = mysql.createConnection({
 
 app.get('/', authMiddleware, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'html', 'home.html'));
+})
+
+app.get('/chat/:room/messages', authMiddleware, (req, res) => {
+  res.status(200).send()
 })
   
 app.get('/login', (req, res) => {
@@ -87,7 +119,7 @@ app.post('/login', (req, res) => {
       }
       const user = results[0];
         const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1y' });
-      res.cookie('jwt', token, { httpOnly: true });
+      res.cookie('jwt', token, { httpOnly: false });
       res.status(200).send({msg:'Logged in successfully'});
     });
 });
@@ -131,39 +163,6 @@ app.post('/signup', async (req, res) => {
     }
   });
 
-  function setUpNewPlayer(username){
-    return;
-    const query = `SELECT id FROM players WHERE username = ?`;
-    db.query(query, [username], (error, results) => {
-      if (error) throw error;
-      else {
-        const playerId = results[0].id;
-        const cashflows = [
-          [generateId(), playerId, "expense", "Mortgage Payment", 350], 
-          [generateId(), playerId, "expense", "Card Credit Payment", 40],
-          [generateId(), playerId, "expense", "Car Payment", 35],
-          [generateId(), playerId, "expense", "Retail Payment", 35],
-          [generateId(), playerId, "expense", "Other Expenses", 200],
-          [generateId(), playerId, "income", "Job Salary", 0]
-        ]
-
-        const liabilities = [
-          [generateId(), playerId, "Mortgage", 75000, cashflows[0][0]], 
-          [generateId(), playerId, "Card Credit Debt", 10000, cashflows[1][0]],
-          [generateId(), playerId, "Car Loan", 35000, cashflows[2][0]],
-          [generateId(), playerId, "Retail Debt", 2000, cashflows[3][0]]
-        ]
-
-        db.query(`INSERT INTO player_cashflow (id, player_id, type, name, value) VALUES ?; INSERT INTO player_liabilities (id, player_id, name, value, cashflow_id) VALUES ?;INSERT INTO player_time (player_id, time) VALUES ('${playerId}', 0)`, [cashflows, liabilities], (error, results) => {
-          if (error) throw error;
-        });
-
-
-      }
-    });
-  }
-
-
   app.get('*', function(req, res){
     res.status(404).sendFile(path.join(__dirname, "public", "static", "404.html"));
   });
@@ -174,8 +173,61 @@ app.post('/signup', async (req, res) => {
   });
    
 
+
 // SOCKET IO SERVER  
-io.on('connection', socket =>{
+io.on('connection', async socket =>{
     console.log('connection')
+
+    const headers = socket.handshake.headers;
+    // Extract the JWT token from the headers
+    const token = headers.authorization?.split('Bearer ')[1];
+    const room = socket.handshake.query.room
+  
+    if (token) {
+      try {
+        // Verify and decode the JWT token to get the user ID
+        const decoded = jwt.verify(token, JWT_SECRET); // Replace 'your_secret_key' with your JWT secret key
+        const userId = decoded.userId;
+
+        console.log(userId)
+  
+        // Associate the user ID with the Socket.IO connection
+        socket.userId = userId;
+        socket.room = room
+
+        const userQuery = `SELECT * FROM users WHERE id='${userId}'`
+    
+        const userRows = await new Promise((resolve, reject) => {
+            db.query(userQuery,  (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        });
+    
+    
+        const user = userRows[0];
+        console.log(user)
+    
+        if (!user) return socket.disconnect();
+    
+        socket.user = user;
+        socket.join(room)
+
+
+      } catch (error) {
+        socket.disconnect()
+        console.log("dis")
+      }
+    } else {
+      socket.disconnect()
+      console.log("dis")
+    }
+
+    socket.on('message', message => {
+      const from = socket.user.username
+      const room = socket.room
+      
+      io.to(room).emit("message", {from: from, message: message})
+    });
 
 })

@@ -1,3 +1,28 @@
+@import url('https://fonts.googleapis.com/css?family=Poppins');
+
+:root {
+    --primary-color: #a1237f;
+    --secondary-color: #e9c46a;
+    --tertiary-color: #f4a261;
+    --light-color: #f9f9f9;
+    --dark-color: #1a1a1a;
+    --danger-color: #e63946;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+ 
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--light-color);
+    color: var(--dark-color);
+    
+  } 
+
 .disabled {
     display: none;
 }
@@ -102,3 +127,85 @@ nav {
   background-color: #66BB6A;
   color: white;
 }
+
+a{
+    text-decoration: none;
+    color: black;
+}
+
+
+
+/* Reset default margin and padding */
+
+  
+  /* Overall chat container */
+  .chat-container {
+    display: flex;
+    height: calc(100vh - 60px); /* Subtract the height of the navbar */
+    margin-top: 60px; /* Set the margin to match the height of the navbar */
+  }
+  
+  /* Chat list on the left */
+  .chat-list {
+    width: 25%;
+    background-color: #f0f0f0;
+    padding: 10px;
+    overflow-y: auto;
+  }
+  
+  /* Chat list item */
+  .chat-item {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+  }
+  
+  /* Messages container in the middle */
+  .messages-container {
+    flex-grow: 1;
+    padding: 10px;
+    background-color: #fff;
+    overflow-y: auto;
+  }
+  
+  /* Message */
+  .message {
+    margin-bottom: 10px;
+  }
+  
+  /* Input container at the bottom */
+  .input-container {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    padding: 10px;
+  }
+  
+  /* Input field */
+/* Input field */
+.input-container input[type="text"] {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    height: 40px; /* Add this line */
+  }
+  
+  /* Send button */
+  .send-button {
+    background-color: #3897f0;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    margin-left: 10px;
+    cursor: pointer;
+    height: 40px; /* Add this line */
+  }
+  
+  /* Hover effect for chat list items and send button */
+  .chat-item:hover,
+  .send-button:hover {
+    background-color: #ddd;
+  }
+  
