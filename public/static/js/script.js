@@ -22,6 +22,8 @@ const socket = io('http://localhost:3000', {
 	  'Authorization': `Bearer ${getTokenFromCookie()}` // Add the JWT token to the headers
 	}, query: {room: roomId}
   });
+
+  
   
   // Function to extract the JWT token from the cookie
   function getTokenFromCookie() {
@@ -50,6 +52,39 @@ function sendMessage(){
 	socket.emit('message', message)
 }
 
+
+fetch('/get-messages')
+	.then(response => response.json())
+	.then(data => {
+		for(m of data){
+			appnedMessage(m)
+		}
+
+
+
+	});
+
 socket.on("message", data => {
-	messageContainer.append(stringToHTML(`<div class="message">${data.from}: ${data.message}</div>`))
+	appnedMessage(data)
 })
+
+function appnedMessage(msg){
+	messageContainer.append(stringToHTML(`<div class="message">${msg.from}: ${msg.message}</div>`))
+}
+
+function newChat(){
+	name = ''
+	name = prompt("Input Room Name")
+	if(name == '' ) return
+	fetch('/new-room', {
+		method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({name:name})
+	})
+	.then(response => response.json())
+	.then(data => {
+		if(data.error) alert(data.error)
+	});
+}

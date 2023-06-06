@@ -66,23 +66,18 @@ const db = mysql.createConnection({
         req.user = user;
 
         const roomId = req.query.room;
-
+        console.log(req.headers.query)
+        console.log('room', roomId)
         if(roomId){
-          const roomRows = await new Promise((resolve, reject) => {
-            db.query(`SELECT * FROM member WHERE user='${userId}' AND room='roomId'`,  (err, results) => {
-            if (err) reject(err);
-            else resolve(results);
-          });
-        });
-    
-    
-        const room = roomRows[0];
-        console.log(room)
-    
-        if (!room) return res.status(401).send({error:'Unauthorized'});
-        }
+          const room = await checkRoom(roomId, userId);
+          console.log(room)
+          if (!room) return res.status(401).send({error:'Unauthorized'});
+          req.roomId = roomId
 
-        
+        };
+
+
+    
     
       next();
       } catch (err) {
@@ -97,9 +92,7 @@ app.get('/', authMiddleware, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'html', 'home.html'));
 })
 
-app.get('/chat/:room/messages', authMiddleware, (req, res) => {
-  res.status(200).send()
-})
+
   
 app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, "public", "html", "login.html"));
@@ -163,6 +156,38 @@ app.post('/signup', async (req, res) => {
     }
   });
 
+
+  
+  app.get('/get-messages', authMiddleware, (req, res) => {
+    if(!req.roomId) return res.status(404).send({error:"Room not found!"})
+    db.query(`SELECT * FROM messages WHERE room="${req.roomId}"`, (err, results) => {
+      if(err){
+        res.status(500).send({error:"Internal server error!"})
+        throw err
+      }
+      res.status(200).send({messages:results})
+
+    })
+  })  
+
+ app.post('/new-room', authMiddleware, (req, res) => {
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).send('Please provide name!');
+    }
+
+    const id = uuidv4()
+    db.query(`INSERT INTO rooms (id, name) VALUES ('${id}', '${name}')`, (error, results) => {
+      if (error) {
+        res.status(500).send({error:'Internal server error!'});
+        throw error;
+      }
+      console.log('asd', id, req.user.id)
+      joinRoom(id, req.user.id)
+      res.status(200).send({msg:'Created Room!'});
+    });
+});
+
   app.get('*', function(req, res){
     res.status(404).sendFile(path.join(__dirname, "public", "static", "404.html"));
   });
@@ -172,6 +197,7 @@ app.post('/signup', async (req, res) => {
     
   });
    
+
 
 
 // SOCKET IO SERVER  
@@ -193,7 +219,7 @@ io.on('connection', async socket =>{
   
         // Associate the user ID with the Socket.IO connection
         socket.userId = userId;
-        socket.room = room
+
 
         const userQuery = `SELECT * FROM users WHERE id='${userId}'`
     
@@ -211,7 +237,19 @@ io.on('connection', async socket =>{
         if (!user) return socket.disconnect();
     
         socket.user = user;
-        socket.join(room)
+
+        const roomId = req.query.room;
+
+
+        if(roomId){
+          const room = await checkRoom(roomId, userId);
+          console.log(room)
+          if (!room) return socket.disconnect();
+          socket.room = room
+          socket.join(room)
+        };
+    
+
 
 
       } catch (error) {
@@ -223,11 +261,36 @@ io.on('connection', async socket =>{
       console.log("dis")
     }
 
-    socket.on('message', message => {
+    socket.on('message', async message => {
       const from = socket.user.username
       const room = socket.room
+
+      if(!await checkRoom(from, room)[0]) console.log("nono");
       
       io.to(room).emit("message", {from: from, message: message})
     });
 
 })
+
+
+async function checkRoom(roomId, userId){
+
+    const roomRows = await new Promise((resolve, reject) => {
+      db.query(`SELECT * FROM member WHERE user='${userId}' AND room='${roomId}'`,  (err, results) => {
+      if (err) reject(err);
+      else resolve(results);
+    });
+
+  })
+
+  const room = roomRows[0];
+  return room
+}
+
+function joinRoom(roomId, userId){
+  db.query(`INSERT INTO member (room, user) VALUES ('${roomId}', '${userId}')`, (error, results) => {
+    if (error) {
+      throw error;
+    }
+  });
+}
