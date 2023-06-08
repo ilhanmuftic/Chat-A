@@ -8,7 +8,6 @@ const path = require('path')
 const cookieParser = require('cookie-parser')
 const app = express();
 const port = process.env.PORT || 8080;
-const cors = require('cors');
 
 const io = require('socket.io')(3000, {
   cors: {
@@ -65,9 +64,6 @@ const db = mysql.createConnection({
     
         req.user = user;
 
-      
-    
-    
       next();
       } catch (err) {
         console.log(err)
@@ -319,7 +315,7 @@ io.on('connection', async socket =>{
           socket.join(roomId)
         };
     
-
+        socket.emit('your-id', userId)
 
 
       } catch (error) {
@@ -337,7 +333,7 @@ io.on('connection', async socket =>{
       
       console.log(from, room)
 
-      io.to(room).emit("message", {username: from, message: message})
+      socket.broadcast.to(room).emit("message", {username: from, message: message})
 
       db.query(`INSERT INTO messages (\`from\`, room, message) VALUES ('${socket.user.id}', '${room}', '${message}')`, (err) =>{if(err) throw err})
     });

@@ -3,6 +3,7 @@
 const match = window.location.href.match(/\/chat\/([^/]+)/);
 const roomId = match ? match[1] : null;
 
+var id = ""
 
 	const socket = io('http://localhost:3000', {
 		extraHeaders: {
@@ -10,7 +11,14 @@ const roomId = match ? match[1] : null;
 		}, query: {room: roomId}
 	  });
 	
-
+socket.on('your-id', iid => {
+	id = iid
+	for(message of document.getElementsByName(id)){
+		message.classList.remove('received')
+		message.classList.add('sent')
+	}
+	
+})
   
   
 
@@ -30,6 +38,7 @@ function sendMessage(){
 
 	socket.emit('message', message)
     messageInput.value=''
+	appendMessage({username: "You", message: message}, 'sent')
 }
 
 
@@ -64,8 +73,10 @@ socket.on("message", data => {
 	appendMessage(data)
 })
 
-function appendMessage(msg){
-	messageContainer.append(stringToHTML(`<div class="message">${msg.username}: ${msg.message}</div>`))
+function appendMessage(msg, sr){
+	var sr = sr || 'received'
+	if(msg.from == id) sr = "sent"
+	messageContainer.append(stringToHTML(`<div class="message ${sr}" name="${msg.from}">${msg.username}: ${msg.message}</div>`))
 	scrollToBottom()
 }
 

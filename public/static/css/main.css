@@ -166,11 +166,31 @@ a{
     padding: 10px;
     background-color: #fff;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
   }
   
   /* Message */
   .message {
-    margin-bottom: 10px;
+    display: block;
+    padding: 8px;
+    width: fit-content;
+    border-radius: 20px;
+    font-size: 14px;
+    max-width: 70%;
+    word-wrap: break-word;
+    margin-top: 10px;
+  }
+  
+  .sent {
+    background-color: #DCF8C6;
+    align-self: flex-end;
+
+  }
+  
+  .received {
+    background-color: #F0F0F0;
+    align-self: flex-start;
   }
   
   /* Input container at the bottom */
