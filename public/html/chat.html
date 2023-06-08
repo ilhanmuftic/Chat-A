@@ -13,6 +13,7 @@
           <a id="username" href="#"></a>
           <ul class="navbar-links">
             <li><a href="/">Home</a></li>
+            <li><a href="/chat">Chat</a></li>
             <li><a href="#" onclick="logout()">Log Out</a></li>
           </ul>
           <a class="logo" href="#">Chat-A</a>
@@ -21,14 +22,12 @@
 
       <div class="chat-container">
         <div class="chat-list">
-          <!-- Chat list items -->
-          <a href="/?room=123"><div class="chat-item">Chat 1</div></a>
-          <div class="chat-item">Chat 2</div>
-          <div class="chat-item">Chat 3</div>
           <div class="chat-item" onclick="newChat()">New Chat</div>
         </div>
         <div style="display:flex;flex-direction: column;width:100%" >
+            <div class="room-bar" ><span id="room-name"></span><button onclick="toggleMembersPanel()">i</button></div>
             <div class="messages-container">
+                
             </div>
             <div class="input-container">
             <input type="text" id = "message-input" placeholder="Type a message..." onkeydown="handleKeyDown(event)" />
@@ -37,8 +36,19 @@
         </div>
       </div>
 
+      <div id="members-panel" class="members-panel">
+        <h2>Members</h2>
+        <div id="members-list"></div>
+        <div class="add-member-container">
+          <input type="text" id="add-member-input" style="font-size: 18px;" placeholder="Add Member">
+          <button id="add-member-button" onclick="addMember()">Add</button>
+        </div>
+        <button id="close-button" onclick="toggleMembersPanel()">Close</button>
+      </div>
+
       <script defer src="http://localhost:3000/socket.io/socket.io.js"></script>
       <script defer src="/js/script.js"></script>
+      <script defer src="/js/rooms.js"></script>
       <script defer src="/js/chat.js"></script>
 </body>
 </html>

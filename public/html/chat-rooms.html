@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat-A</title>
     <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/market.css">
 </head>
 <body>
     <nav class="navbar">
@@ -21,14 +20,16 @@
         </div>
       </nav>
 
+      <div class="chat-container">
+        <div class="chat-list">
+          <!-- Chat list items -->
+          <div class="chat-item" onclick="newChat()">New Chat</div>
 
-      <div class="market">
-        <div class="market__option" onclick="location.href='/chat';">
-          <div class="market__option-image" style="background-image: url('/data/img/logo.png');"></div>
-          <div class="market__option-name">Chat</div>
         </div>
-      </div> 
-
-      <script src="/js/script.js"></script>
+      </div>
+      
+      
+      <script defer src="/js/script.js"></script>
+      <script defer src="/js/rooms.js"></script>
 </body>
 </html>

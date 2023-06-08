@@ -19,6 +19,11 @@ const roomId = match ? match[1] : null;
 const messageContainer = document.querySelector('.messages-container')
 const messageInput = document.querySelector('#message-input')
 const chatContainer = document.querySelector('.chat-containter')
+const roomName = document.querySelector('#room-name')
+const membersList = document.getElementById('members-list');
+const addMemberInput = document.querySelector('#add-member-input')
+
+
 
 function sendMessage(){
 	const message = messageInput.value
@@ -28,41 +33,40 @@ function sendMessage(){
 }
 
 
+fetch('/get-room/' + roomId)
+	.then(response => response.json())
+	.then(data => {
+        roomName.innerText = data.room.name
+		data.room.members.split(',').forEach((member) => {
+			membersList.append(stringToHTML(`<div>${member}</div>`));
+		  });
+		  
+});
+
 fetch('/get-messages/' + roomId)
 	.then(response => response.json())
 	.then(data => {
         if(!data.messages[0]) return
 		for(m of data.messages){
-			appnedMessage(m)
+			appendMessage(m)
 		}
 
+		
+});
 
 
-	});
-
-socket.on("message", data => {
-	appnedMessage(data)
-})
-
-function appnedMessage(msg){
-	messageContainer.append(stringToHTML(`<div class="message">${msg.username}: ${msg.message}</div>`))
+function scrollToBottom(){
+	messageContainer.scrollTop = messageContainer.scrollHeight;	
 }
 
-function newChat(){
-	name = ''
-	name = prompt("Input Room Name")
-	if(name == '' ) return
-	fetch('/new-room', {
-		method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({name:name})
-	})
-	.then(response => response.json())
-	.then(data => {
-		if(data.error) alert(data.error)
-	});
+
+socket.on("message", data => {
+	appendMessage(data)
+})
+
+function appendMessage(msg){
+	messageContainer.append(stringToHTML(`<div class="message">${msg.username}: ${msg.message}</div>`))
+	scrollToBottom()
 }
 
 
@@ -72,4 +76,27 @@ function handleKeyDown(event) {
 	  event.preventDefault(); // Prevent default form submission behavior
 	  sendMessage();
 	}
+  }
+
+  
+
+  function toggleMembersPanel() {
+	const membersPanel = document.getElementById('members-panel');
+	membersPanel.classList.toggle('active');
+  }
+  
+
+  function addMember(){
+	fetch('/add-member/' + roomId, {
+		method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({member:addMemberInput.value})
+	})
+	.then(response => response.json())
+	.then(data => {
+		if(data.error) return alert(data.error)
+		membersList.append(stringToHTML(`<div>${addMemberInput.value}</div>`));
+	});
   }

@@ -64,8 +64,7 @@ sign_up_form.addEventListener("submit", (e) => {
             if (data.error) {
                 alert(data.error);
             } else {
-                alert("Account created successfully. Please log in.");
-                signInMode();
+                location.href='/'
             }
         })
         .catch((error) => {

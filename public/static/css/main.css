@@ -18,7 +18,7 @@
  
 body {
     font-family: 'Poppins', sans-serif;
-    background-color: var(--light-color);
+    background-color: #fff;
     color: var(--dark-color);
     
   } 
@@ -207,5 +207,88 @@ a{
   .chat-item:hover,
   .send-button:hover {
     background-color: #ddd;
+  }
+  
+
+  .room-bar{
+    width: 100%;
+    height: 40px;
+    border-bottom: solid black 1px;
+    display: flex;
+    padding: 30px;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    font-size: 35px;
+  }
+
+  .room-bar button {
+    background-color: #333;
+    color: #fff;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    margin-left: auto; /* Align button to the right */
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .room-bar button:hover {
+    background-color: #555;
+  }
+
+  .members-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 350px;
+    height: 100%;
+    background-color: #f2f2f2;
+    padding: 20px;
+    transition: transform 0.3s ease;
+    transform: translateX(100%);
+  }
+  
+  .members-panel.active {
+    transform: translateX(0);
+  }
+
+  .add-member-container{
+    display: flex;
+    flex-direction: row;
+  }
+
+  .add-member-container * {
+    margin-top: 10px;
+  }
+  .add-member-container button {
+    margin-left: 3px;
+    padding: 10px 20px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .add-member-container button:hover {
+    background-color: #45a049;
+  }
+  
+  #close-button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  #close-button:hover {
+    background-color: #d32f2f;
   }
   

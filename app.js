@@ -61,7 +61,7 @@ const db = mysql.createConnection({
         const user = userRows[0];
         console.log(user)
     
-        if (!user) return res.status(401).send({error:'Unauthorized'});
+        if (!user) return res.redirect('/login') //res.status(401).send({error:'Unauthorized'});
     
         req.user = user;
 
@@ -79,6 +79,10 @@ const db = mysql.createConnection({
 
 app.get('/', authMiddleware, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'html', 'home.html'));
+})
+
+app.get('/chat', authMiddleware, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'html', 'chat-rooms.html'));
 })
 
 app.get('/chat/:roomId', authMiddleware, async (req, res) => {
@@ -139,9 +143,10 @@ app.post('/signup', async (req, res) => {
       }
   
       // Insert the user to the database
+      const id = uuidv4()
       await new Promise((resolve, reject) => {
-        const query = `INSERT INTO users (id, username, password) VALUES (uuid(), ?, ?)`;
-        db.query(query, [req.body.username, req.body.password], (error, results) => {
+        const query = `INSERT INTO users (id, username, password) VALUES (?, ?, ?)`;
+        db.query(query, [id, req.body.username, req.body.password], (error, results) => {
           if (error) {
             reject(error);
           } else {
@@ -150,6 +155,8 @@ app.post('/signup', async (req, res) => {
         });
       });
 
+      const token = jwt.sign({ userId: id }, JWT_SECRET, { expiresIn: '1y' });
+      res.cookie('jwt', token, { httpOnly: false });
       //setUpNewPlayer(req.body.username);
   
       // Respond with success message
@@ -167,7 +174,7 @@ app.post('/signup', async (req, res) => {
     db.query(`SELECT messages.*, users.username
     FROM messages
     JOIN users ON messages.from = users.id
-    WHERE messages.room = "${req.params.roomId}"
+    WHERE messages.room = "${req.params.roomId}" ORDER BY date ASC;
     `, (err, results) => {
       if(err){
         res.status(500).send({error:"Internal server error!"})
@@ -177,6 +184,39 @@ app.post('/signup', async (req, res) => {
 
     })
   })  
+
+
+  app.get('/get-room/:roomId', authMiddleware, async (req, res) => {
+    if(!await checkRoom(req.params.roomId, req.user.id)) return res.status(401).send({error:"Unauthorized"})
+    db.query(`SELECT rooms.*, GROUP_CONCAT(users.username) AS members
+    FROM rooms
+    LEFT JOIN member ON rooms.id = member.room
+    LEFT JOIN users ON member.user = users.id
+    WHERE rooms.id = '${req.params.roomId}';
+    `, (err, results) => {
+      if(err){
+        res.status(500).send({error:"Internal server error!"})
+        throw err
+      }
+      res.status(200).send({room:results[0]})
+
+    })
+  })   
+
+  app.get('/get-rooms', authMiddleware, async (req, res) => {
+    db.query(`SELECT rooms.*
+    FROM member
+    JOIN rooms ON member.room = rooms.id
+    WHERE member.user = '${req.user.id}' ORDER BY date desc;
+    `, (err, results) => {
+      if(err){
+        res.status(500).send({error:"Internal server error!"})
+        throw err
+      }
+      res.status(200).send({rooms:results})
+
+    })
+  })   
 
  app.post('/new-room', authMiddleware, (req, res) => {
     const { name } = req.body;
@@ -194,6 +234,29 @@ app.post('/signup', async (req, res) => {
       joinRoom(id, req.user.id)
       res.status(200).send({msg:'Created Room!'});
     });
+});
+
+app.post('/add-member/:roomId', authMiddleware, async (req, res) => {
+  const { member } = req.body;
+  if (!member) {
+    return res.status(400).send({error:'Please provide member!'});
+  }
+
+  const userRows = await new Promise((resolve, reject) => {
+    db.query(`SELECT * FROM users WHERE username='${member}'`,  (err, results) => {
+    if (err) reject(err);
+    else resolve(results);
+  });
+});
+
+
+const user = userRows[0];
+
+if(!user) return res.status(404).send({error: 'User not found!'});
+
+await joinRoom(req.params.roomId, user.id)
+res.status(200).send({msg:"User added."})
+
 });
 
   app.get('*', function(req, res){
@@ -297,7 +360,7 @@ async function checkRoom(roomId, userId){
 }
 
 function joinRoom(roomId, userId){
-  db.query(`INSERT INTO member (room, user) VALUES ('${roomId}', '${userId}')`, (error, results) => {
+  db.query(`INSERT IGNORE INTO member (room, user) VALUES ('${roomId}', '${userId}')`, (error, results) => {
     if (error) {
       throw error;
     }
