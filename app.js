@@ -65,18 +65,7 @@ const db = mysql.createConnection({
     
         req.user = user;
 
-        const roomId = req.query.room;
-        console.log(req.headers.query)
-        console.log('room', roomId)
-        if(roomId){
-          const room = await checkRoom(roomId, userId);
-          console.log(room)
-          if (!room) return res.status(401).send({error:'Unauthorized'});
-          req.roomId = roomId
-
-        };
-
-
+      
     
     
       next();
@@ -92,6 +81,21 @@ app.get('/', authMiddleware, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'html', 'home.html'));
 })
 
+app.get('/chat/:roomId', authMiddleware, async (req, res) => {
+  const roomId = req.params.roomId;
+  req.roomId = roomId
+
+  console.log('room', roomId)
+
+  if(roomId){
+    console.log(req.user.id)
+    const room = await checkRoom(roomId, req.user.id);
+    console.log(room)
+    if (!room) return res.status(403).send({error:'Forbidden'});
+  };
+
+  res.sendFile(path.join(__dirname, 'public', 'html', 'chat.html'));
+})
 
   
 app.get('/login', (req, res) => {
@@ -158,9 +162,13 @@ app.post('/signup', async (req, res) => {
 
 
   
-  app.get('/get-messages', authMiddleware, (req, res) => {
-    if(!req.roomId) return res.status(404).send({error:"Room not found!"})
-    db.query(`SELECT * FROM messages WHERE room="${req.roomId}"`, (err, results) => {
+  app.get('/get-messages/:roomId', authMiddleware, async (req, res) => {
+    if(!await checkRoom(req.params.roomId, req.user.id)) return res.status(401).send({error:"Unauthorized"})
+    db.query(`SELECT messages.*, users.username
+    FROM messages
+    JOIN users ON messages.from = users.id
+    WHERE messages.room = "${req.params.roomId}"
+    `, (err, results) => {
       if(err){
         res.status(500).send({error:"Internal server error!"})
         throw err
@@ -207,7 +215,7 @@ io.on('connection', async socket =>{
     const headers = socket.handshake.headers;
     // Extract the JWT token from the headers
     const token = headers.authorization?.split('Bearer ')[1];
-    const room = socket.handshake.query.room
+
   
     if (token) {
       try {
@@ -238,15 +246,14 @@ io.on('connection', async socket =>{
     
         socket.user = user;
 
-        const roomId = req.query.room;
-
+        const roomId = socket.handshake.query.room
 
         if(roomId){
           const room = await checkRoom(roomId, userId);
           console.log(room)
           if (!room) return socket.disconnect();
-          socket.room = room
-          socket.join(room)
+          socket.room = roomId
+          socket.join(roomId)
         };
     
 
@@ -264,10 +271,12 @@ io.on('connection', async socket =>{
     socket.on('message', async message => {
       const from = socket.user.username
       const room = socket.room
-
-      if(!await checkRoom(from, room)[0]) console.log("nono");
       
-      io.to(room).emit("message", {from: from, message: message})
+      console.log(from, room)
+
+      io.to(room).emit("message", {username: from, message: message})
+
+      db.query(`INSERT INTO messages (\`from\`, room, message) VALUES ('${socket.user.id}', '${room}', '${message}')`, (err) =>{if(err) throw err})
     });
 
 })

@@ -19,25 +19,5 @@
         </div>
       </nav>
 
-      <div class="chat-container">
-        <div class="chat-list">
-          <!-- Chat list items -->
-          <a href="/?room=123"><div class="chat-item">Chat 1</div></a>
-          <div class="chat-item">Chat 2</div>
-          <div class="chat-item">Chat 3</div>
-          <div class="chat-item" onclick="newChat()">New Chat</div>
-        </div>
-        <div style="display:flex;flex-direction: column;width:100%" >
-            <div class="messages-container">
-            </div>
-            <div class="input-container">
-            <input type="text" id = "message-input" placeholder="Type a message..." />
-            <button class="send-button" onclick="sendMessage()">Send</button>
-            </div>
-        </div>
-      </div>
-
-      <script defer src="http://localhost:3000/socket.io/socket.io.js"></script>
-      <script defer src="/js/script.js"></script>
 </body>
 </html>
